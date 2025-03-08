@@ -1,0 +1,36 @@
+name: Create release with latest URL
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest release URL
+        run: |
+          REPO="ungoogled-software/ungoogled-chromium-windows"
+
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+
+          ZIP_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | test("ungoogled-chromium_.*_windows_x64.zip")) | .browser_download_url')
+
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r ".tag_name")
+          REVISION="1"
+          TIMESTAMP=$(date +%s) # latest timestamp
+
+          COMMIT=$(git rev-parse HEAD)
+
+          echo "browser=chromium;os=windows;architecture=64-bit;timestamp=$TIMESTAMP;editor=uazo;channel=stable;repository=https://github.com/uazo/cromite/releases;download=$ZIP_URL;version=$VERSION;revision=$REVISION;commit=$COMMIT" > updateurl.txt
+
+          # Set variables for release
+          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "zip_url=$ZIP_URL" >> $GITHUB_ENV
+
+      - name: Create Release
+        run: |
+          gh release create "${{ env.version }}" updateurl.txt --title "Release ${{ env.version }}" --notes "Latest release URL: ${{ env.zip_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
