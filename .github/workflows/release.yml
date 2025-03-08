@@ -33,7 +33,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_ENV
           echo "zip_url=$ZIP_URL" >> $GITHUB_ENV
 
-      - name: Create Release
+      - name: Check if release exists
+        run: |
+          REPO="${{ github.repository }}"
+          VERSION="${{ env.version }}"
+          echo "release_exists=$(curl -s "https://api.github.com/repos/$REPO/releases/tags/$VERSION" | jq -r '.id != null')" >> $GITHUB_ENV
+
+      - name: Create release
+        if: env.release_exists == 'true'
         run: |
           gh release create "${{ env.version }}" updateurl.txt --title "Release ${{ env.version }}" --notes "Latest release URL: ${{ env.zip_url }}"
         env:
