@@ -1,0 +1,47 @@
+name: Create release with latest URL
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get latest release URL
+        run: |
+          REPO="ungoogled-software/ungoogled-chromium-windows"
+
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+
+          ZIP_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | test("ungoogled-chromium_.*_windows_x64.zip")) | .browser_download_url')
+
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r ".tag_name")
+          REVISION="1"
+          TIMESTAMP=$(date +%s) # latest timestamp
+
+          COMMIT=$(git rev-parse HEAD)
+
+          echo "browser=chromium;os=windows;architecture=64-bit;timestamp=$TIMESTAMP;editor=ungoogled-software;channel=stable;repository=https://github.com/ungoogled-software/ungoogled-chromium-windows/releases;download=$ZIP_URL;version=$VERSION;revision=$REVISION;commit=$COMMIT" > updateurl.txt
+
+          # Set variables for release
+          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "zip_url=$ZIP_URL" >> $GITHUB_ENV
+
+      - name: Check if release exists
+        run: |
+          REPO="${{ github.repository }}"
+          VERSION="${{ env.version }}"
+          echo "release_exists=$(curl -s "https://api.github.com/repos/$REPO/releases/tags/$VERSION" | jq -r '.id != null')" >> $GITHUB_ENV
+
+      - name: Create release
+        if: env.release_exists == 'false'
+        run: |
+          gh release create "${{ env.version }}" updateurl.txt --title "Release ${{ env.version }}" --notes "Latest release URL: ${{ env.zip_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
