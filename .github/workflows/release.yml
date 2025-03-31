@@ -25,7 +25,7 @@ jobs:
           REVISION="1"
           TIMESTAMP=$(date +%s) # latest timestamp
 
-          COMMIT=$(git rev-parse HEAD)
+          COMMIT=$(echo "$LATEST_RELEASE" | jq -r '.target_commitish')
 
           echo "browser=chromium;os=windows;architecture=64-bit;timestamp=$TIMESTAMP;editor=ungoogled-software;channel=stable;repository=https://github.com/ungoogled-software/ungoogled-chromium-windows/releases;download=$ZIP_URL;version=$VERSION;revision=$REVISION;commit=$COMMIT" > updateurl.txt
 
