@@ -21,7 +21,7 @@ jobs:
 
           ZIP_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | test("ungoogled-chromium_.*_windows_x64.zip")) | .browser_download_url')
 
-          VERSION=$(echo "$LATEST_RELEASE" | jq -r ".tag_name")
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r ".tag_name" | sed 's/-.*//')
           REVISION="1"
           TIMESTAMP=$(date +%s) # latest timestamp
 
